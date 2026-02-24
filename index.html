@@ -288,6 +288,35 @@ body {
 .btn-amber { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
 .btn-amber:hover { background: rgba(245,158,11,0.25); }
 .btn-sm { padding: 5px 12px; font-size: 12px; }
+/* SCORE BAR */
+.score-bar {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.score-bucket {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 60px;
+}
+.score-bucket:hover { border-color: var(--accent); background: var(--surface2); }
+.score-bucket.active { border-color: var(--accent); background: var(--accent-glow); color: var(--text); }
+.score-bucket.green .score-count { color: var(--green); }
+.score-bucket.amber .score-count { color: var(--amber); }
+.score-bucket.red .score-count { color: var(--red); }
+.score-bucket.unseen .score-count { color: var(--text-dim); }
+.score-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.score-count { font-size: 18px; font-weight: 700; margin-top: 2px; }
 
 /* LIMITATIONS TABLE */
 .lim-table {
@@ -756,7 +785,7 @@ body {
         <ul>
           <li><span class="kbd">Space</span> or click card &mdash; Reveal answer</li>
           <li><span class="kbd">&rarr;</span> Next card &nbsp; <span class="kbd">&larr;</span> Previous card</li>
-          <li><span class="kbd">1</span> Got it &nbsp; <span class="kbd">2</span> Needs review &nbsp; <span class="kbd">3</span> Missed it</li>
+          <li><span class="kbd">1</span> Got it &nbsp; <span class="kbd">2</span> Review later &nbsp; <span class="kbd">3</span> Missed</li>
           <li><span class="kbd">S</span> Shuffle cards</li>
         </ul>
       </div>
@@ -798,9 +827,31 @@ body {
           <div class="card-hint" id="lim-card-hint">Click or press Space to reveal</div>
         </div>
         <div class="card-buttons" id="lim-card-buttons" style="display:none">
-          <button class="btn btn-green" onclick="markLimCard('got')">Got It (1)</button>
-          <button class="btn btn-amber" onclick="markLimCard('review')">Review (2)</button>
-          <button class="btn btn-red" onclick="markLimCard('miss')">Missed (3)</button>
+          <button class="btn btn-green" onclick="markLimCard('got')">&#10003; Got It</button>
+          <button class="btn btn-amber" onclick="markLimCard('review')">&#8635; Review Later</button>
+          <button class="btn btn-red" onclick="markLimCard('miss')">&#10007; Missed</button>
+        </div>
+        <div class="score-bar" id="lim-score-bar">
+          <button class="score-bucket active" onclick="setLimReviewFilter('all')">
+            <span class="score-label">All</span>
+            <span class="score-count" id="lim-count-all">0</span>
+          </button>
+          <button class="score-bucket green" onclick="setLimReviewFilter('got')">
+            <span class="score-label">Got It</span>
+            <span class="score-count" id="lim-count-got">0</span>
+          </button>
+          <button class="score-bucket amber" onclick="setLimReviewFilter('review')">
+            <span class="score-label">Review</span>
+            <span class="score-count" id="lim-count-review">0</span>
+          </button>
+          <button class="score-bucket red" onclick="setLimReviewFilter('miss')">
+            <span class="score-label">Missed</span>
+            <span class="score-count" id="lim-count-miss">0</span>
+          </button>
+          <button class="score-bucket unseen" onclick="setLimReviewFilter('unseen')">
+            <span class="score-label">Unseen</span>
+            <span class="score-count" id="lim-count-unseen">0</span>
+          </button>
         </div>
       </div>
 
@@ -840,9 +891,31 @@ body {
         <div class="card-hint" id="quiz-card-hint">Click or press Space to reveal</div>
       </div>
       <div class="card-buttons" id="quiz-card-buttons" style="display:none">
-        <button class="btn btn-green" onclick="markQuizCard('got')">Got It (1)</button>
-        <button class="btn btn-amber" onclick="markQuizCard('review')">Review (2)</button>
-        <button class="btn btn-red" onclick="markQuizCard('miss')">Missed (3)</button>
+        <button class="btn btn-green" onclick="markQuizCard('got')">✓ Got It</button>
+        <button class="btn btn-amber" onclick="markQuizCard('review')">↻ Review Later</button>
+        <button class="btn btn-red" onclick="markQuizCard('miss')">✗ Missed</button>
+      </div>
+      <div class="score-bar" id="quiz-score-bar">
+        <button class="score-bucket active" onclick="setQuizReviewFilter('all')">
+          <span class="score-label">All</span>
+          <span class="score-count" id="quiz-count-all">0</span>
+        </button>
+        <button class="score-bucket green" onclick="setQuizReviewFilter('got')">
+          <span class="score-label">Got It</span>
+          <span class="score-count" id="quiz-count-got">0</span>
+        </button>
+        <button class="score-bucket amber" onclick="setQuizReviewFilter('review')">
+          <span class="score-label">Review</span>
+          <span class="score-count" id="quiz-count-review">0</span>
+        </button>
+        <button class="score-bucket red" onclick="setQuizReviewFilter('miss')">
+          <span class="score-label">Missed</span>
+          <span class="score-count" id="quiz-count-miss">0</span>
+        </button>
+        <button class="score-bucket unseen" onclick="setQuizReviewFilter('unseen')">
+          <span class="score-label">Unseen</span>
+          <span class="score-count" id="quiz-count-unseen">0</span>
+        </button>
       </div>
     </div>
 
@@ -1459,6 +1532,7 @@ function defaultState() {
     limOrder: [...Array(LIMITATIONS.length).keys()],
     quizOrder: [...Array(QUIZ_DATA.length).keys()],
     limFilter: 'All', quizFilter: 'All',
+    limReviewFilter: 'all', quizReviewFilter: 'all',
   };
 }
 function loadState() {
@@ -1514,8 +1588,15 @@ function getLimCategories() {
 }
 
 function getFilteredLimOrder() {
-  if (state.limFilter === 'All') return state.limOrder;
-  return state.limOrder.filter(i => LIMITATIONS[i].cat === state.limFilter);
+  let order = state.limOrder;
+  if (state.limFilter !== 'All') order = order.filter(i => LIMITATIONS[i].cat === state.limFilter);
+  if (state.limReviewFilter && state.limReviewFilter !== 'all') {
+    if (state.limReviewFilter === 'got') order = order.filter(i => state.limGot.includes(i));
+    else if (state.limReviewFilter === 'review') order = order.filter(i => state.limReview.includes(i));
+    else if (state.limReviewFilter === 'miss') order = order.filter(i => state.limMiss.includes(i));
+    else if (state.limReviewFilter === 'unseen') order = order.filter(i => !state.limGot.includes(i) && !state.limReview.includes(i) && !state.limMiss.includes(i));
+  }
+  return order;
 }
 
 function renderLimFilters() {
@@ -1560,6 +1641,7 @@ function renderLimCard() {
   document.getElementById('lim-card-buttons').style.display = 'none';
   document.getElementById('lim-progress').textContent = `Card ${idx+1} of ${order.length}`;
   updateProgressBars();
+  updateLimScoreCounts();
 }
 
 function revealLimCard() {
@@ -1592,6 +1674,33 @@ function markLimCard(result) {
   updateDashboard();
 }
 
+
+function setLimReviewFilter(filter) {
+  state.limReviewFilter = filter;
+  state.limIdx = 0;
+  saveState();
+  renderLimCard();
+  updateLimScoreCounts();
+}
+
+function updateLimScoreCounts() {
+  const total = LIMITATIONS.length;
+  const got = state.limGot.length;
+  const rev = state.limReview.length;
+  const miss = state.limMiss.length;
+  const unseen = total - got - rev - miss;
+  document.getElementById('lim-count-all').textContent = total;
+  document.getElementById('lim-count-got').textContent = got;
+  document.getElementById('lim-count-review').textContent = rev;
+  document.getElementById('lim-count-miss').textContent = miss;
+  document.getElementById('lim-count-unseen').textContent = unseen;
+  document.querySelectorAll('#lim-score-bar .score-bucket').forEach(function(btn) {
+    var onclick = btn.getAttribute('onclick');
+    var m = onclick.match(/'(\w+)'/);
+    if (m) btn.classList.toggle('active', m[1] === state.limReviewFilter);
+  });
+}
+
 function shuffleLimCards() {
   for (let i = state.limOrder.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -1605,6 +1714,7 @@ function shuffleLimCards() {
 function resetLimCards() {
   state.limGot = []; state.limReview = []; state.limMiss = [];
   state.limIdx = 0;
+  state.limReviewFilter = 'all';
   saveState();
   renderLimCard();
   updateDashboard();
@@ -1637,8 +1747,15 @@ function getQuizCategories() {
 }
 
 function getFilteredQuizOrder() {
-  if (state.quizFilter === 'All') return state.quizOrder;
-  return state.quizOrder.filter(i => QUIZ_DATA[i].cat === state.quizFilter);
+  let order = state.quizOrder;
+  if (state.quizFilter !== 'All') order = order.filter(i => QUIZ_DATA[i].cat === state.quizFilter);
+  if (state.quizReviewFilter && state.quizReviewFilter !== 'all') {
+    if (state.quizReviewFilter === 'got') order = order.filter(i => state.quizGot.includes(i));
+    else if (state.quizReviewFilter === 'review') order = order.filter(i => state.quizReview.includes(i));
+    else if (state.quizReviewFilter === 'miss') order = order.filter(i => state.quizMiss.includes(i));
+    else if (state.quizReviewFilter === 'unseen') order = order.filter(i => !state.quizGot.includes(i) && !state.quizReview.includes(i) && !state.quizMiss.includes(i));
+  }
+  return order;
 }
 
 function renderQuizFilters() {
@@ -1674,6 +1791,7 @@ function renderQuizCard() {
   document.getElementById('quiz-card-buttons').style.display = 'none';
   document.getElementById('quiz-progress').textContent = `Card ${idx+1} of ${order.length}`;
   updateProgressBars();
+  updateQuizScoreCounts();
 }
 
 function revealQuizCard() {
@@ -1705,6 +1823,33 @@ function markQuizCard(result) {
   updateDashboard();
 }
 
+
+function setQuizReviewFilter(filter) {
+  state.quizReviewFilter = filter;
+  state.quizIdx = 0;
+  saveState();
+  renderQuizCard();
+  updateQuizScoreCounts();
+}
+
+function updateQuizScoreCounts() {
+  const total = QUIZ_DATA.length;
+  const got = state.quizGot.length;
+  const rev = state.quizReview.length;
+  const miss = state.quizMiss.length;
+  const unseen = total - got - rev - miss;
+  document.getElementById('quiz-count-all').textContent = total;
+  document.getElementById('quiz-count-got').textContent = got;
+  document.getElementById('quiz-count-review').textContent = rev;
+  document.getElementById('quiz-count-miss').textContent = miss;
+  document.getElementById('quiz-count-unseen').textContent = unseen;
+  document.querySelectorAll('#quiz-score-bar .score-bucket').forEach(function(btn) {
+    var onclick = btn.getAttribute('onclick');
+    var m = onclick.match(/'(\w+)'/);
+    if (m) btn.classList.toggle('active', m[1] === state.quizReviewFilter);
+  });
+}
+
 function shuffleQuizCards() {
   for (let i = state.quizOrder.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -1718,6 +1863,7 @@ function shuffleQuizCards() {
 function resetQuizCards() {
   state.quizGot = []; state.quizReview = []; state.quizMiss = [];
   state.quizIdx = 0;
+  state.quizReviewFilter = 'all';
   saveState();
   renderQuizCard();
   updateDashboard();
